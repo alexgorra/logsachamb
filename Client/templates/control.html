@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Anechoic Chamber Control Panel</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif; background: #f5f7fa; min-height: 100vh; padding: 20px; }
+    .container { max-width: 900px; margin: 0 auto; background: #ffffff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); overflow: hidden; }
+    .header { background: #2c3e50; padding: 32px 40px; color: white; border-bottom: 3px solid #34495e; }
+    h1 { font-size: 1.75em; font-weight: 600; margin-bottom: 4px; }
+    .subtitle { font-size: 0.9em; opacity: 0.85; font-weight: 400; }
+    .content { padding: 36px 40px; }
+    .group { margin-bottom: 32px; padding-bottom: 24px; border-bottom: 1px solid #e8eaed; }
+    .group:last-of-type { border-bottom: none; }
+    .group-title { font-size: 1.1em; color: #2c3e50; margin-bottom: 14px; font-weight: 600; }
+    .button-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin-bottom: 8px; }
+    button { background: #3498db; color: #fff; border: none; border-radius: 6px; padding: 12px 18px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); }
+    button:hover { background: #2980b9; transform: translateY(-1px); box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15); }
+    button:active { transform: translateY(0); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); }
+    .special-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 8px; }
+    .status-group button { width: 100%; max-width: 300px; }
+    #response { margin-top: 24px; font-family: 'Courier New', monospace; font-size: 13px; color: #2c3e50; background: #f8f9fa; border-radius: 8px; padding: 18px 20px; min-height: 50px; border: 1px solid #dee2e6; white-space: pre-wrap; word-break: break-word; }
+    #response:empty::before { content: 'System ready. Awaiting commands...'; color: #6c757d; font-style: italic; }
+    @media (max-width: 768px) {
+      .content { padding: 24px 20px; }
+      .header { padding: 24px 20px; }
+      h1 { font-size: 1.5em; }
+      .button-row, .special-row { grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Anechoic Chamber Control Panel</h1>
+      <div class="subtitle">Precision Positioning System</div>
+    </div>
+    
+    <div class="content">
+      <div class="group">
+        <div class="group-title">X Axis Control</div>
+        <div class="button-row">
+          <button onclick="sendCommand('x_minus_10')">X -10</button>
+          <button onclick="sendCommand('x_minus_1')">X -1</button>
+          <button onclick="sendCommand('x_minus_0_1')">X -0.1</button>
+          <button onclick="sendCommand('x_minus_0_02')">X -0.02</button>
+          <button onclick="sendCommand('x_plus_0_02')">X +0.02</button>
+          <button onclick="sendCommand('x_plus_0_1')">X +0.1</button>
+          <button onclick="sendCommand('x_plus_1')">X +1</button>
+          <button onclick="sendCommand('x_plus_10')">X +10</button>
+        </div>
+      </div>
+
+      <div class="group">
+        <div class="group-title">Y Axis Control</div>
+        <div class="button-row">
+          <button onclick="sendCommand('y_minus_10')">Y -10</button>
+          <button onclick="sendCommand('y_minus_1')">Y -1</button>
+          <button onclick="sendCommand('y_minus_0_1')">Y -0.1</button>
+          <button onclick="sendCommand('y_minus_0_02')">Y -0.02</button>
+          <button onclick="sendCommand('y_plus_0_02')">Y +0.02</button>
+          <button onclick="sendCommand('y_plus_0_1')">Y +0.1</button>
+          <button onclick="sendCommand('y_plus_1')">Y +1</button>
+          <button onclick="sendCommand('y_plus_10')">Y +10</button>
+        </div>
+      </div>
+
+      <div class="group">
+        <div class="group-title">A Axis Control</div>
+        <div class="button-row">
+          <button onclick="sendCommand('a_minus_10')">A -10</button>
+          <button onclick="sendCommand('a_minus_1')">A -1</button>
+          <button onclick="sendCommand('a_minus_0_1')">A -0.1</button>
+          <button onclick="sendCommand('a_minus_0_02')">A -0.02</button>
+          <button onclick="sendCommand('a_plus_0_02')">A +0.02</button>
+          <button onclick="sendCommand('a_plus_0_1')">A +0.1</button>
+          <button onclick="sendCommand('a_plus_1')">A +1</button>
+          <button onclick="sendCommand('a_plus_10')">A +10</button>
+        </div>
+      </div>
+
+      <div class="group">
+        <div class="group-title">System Commands</div>
+        <div class="special-row">
+          <button onclick="sendCommand('save_zero')">Save Zero</button>
+          <button onclick="sendCommand('save_zero_session')">Save Zero (Session)</button>
+          <button onclick="sendCommand('home_all')">Home All</button>
+          <button onclick="sendCommand('home_x')">Home X</button>
+          <button onclick="sendCommand('home_y')">Home Y</button>
+          <button onclick="sendCommand('home_a')">Home A</button>
+          <button onclick="sendCommand('goto_zero')">Go to Zero</button>
+        </div>
+      </div>
+
+      <div class="group status-group">
+        <div class="group-title">Status Monitor</div>
+        <button onclick="getLastCommand()">Check Last Command</button>
+      </div>
+
+      <div id="response"></div>
+    </div>
+  </div>
+
+  <script>
+    async function sendCommand(command) {
+      const formData = new FormData();
+      formData.append("command", command);
+      const res = await fetch("/send", { method: "POST", body: formData });
+      const data = await res.json();
+      let status = data.status;
+      let cmd = data.server_response?.received_command;
+      document.getElementById("response").innerText =
+        "Status: " + status + "\nReceived Command: " + cmd;
+    }
+
+    async function getLastCommand() {
+      const res = await fetch("/last");
+      const data = await res.json();
+      let serverData = data.server_response || {};
+      let lastCmd = serverData.last_command || "None";
+      document.getElementById("response").innerText =
+        "Last Command: " + lastCmd;
+    }
+  </script>
+</body>
+</html>
