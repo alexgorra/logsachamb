@@ -1,0 +1,20 @@
+# .dockerignore
+
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.sqlite3
+*.log
+
+.venv/
+env/
+venv/
+
+.git/
+.gitignore
+.vscode/
+.DS_Store
+
+# Optional: exclude tests if not needed in container
+tests/

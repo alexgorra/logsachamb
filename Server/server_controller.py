@@ -21,6 +21,13 @@ class Controller:
 
     def execute(self, mapped_command: str) -> dict:
 
+        if(mapped_command == "CONNECT"):
+            self.connect_to_controller()
+            
+        if(mapped_command == "DISCONNECT"):
+            self.disconnect_to_controller()
+        
+
         # Placeholder for future serial communication logic.
         self.log.info(f"Executing mapped command: {mapped_command}")
         # Simulated response 

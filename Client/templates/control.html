@@ -16,9 +16,15 @@
     .group:last-of-type { border-bottom: none; }
     .group-title { font-size: 1.1em; color: #2c3e50; margin-bottom: 14px; font-weight: 600; }
     .button-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin-bottom: 8px; }
-    button { background: #3498db; color: #fff; border: none; border-radius: 6px; padding: 12px 18px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); }
+    button { background: #3498db; color: #fff; border: none; border-radius: 6px; padding: 12px 18px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); position: relative; overflow: hidden; }
     button:hover { background: #2980b9; transform: translateY(-1px); box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15); }
     button:active { transform: translateY(0); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); }
+    button:disabled { cursor: not-allowed; }
+    button::before { content: ''; position: absolute; top: 0; left: 0; height: 100%; width: 0; background: rgba(0, 0, 0, 0.3); z-index: 1; transition: none; }
+    button.cooling-down::before { animation: progress-bar 1.35s ease-out; }
+    button.cooling-down { pointer-events: none; }
+    button span { position: relative; z-index: 2; }
+    @keyframes progress-bar { 0% { width: 0%; } 100% { width: 100%; } }
     .special-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 8px; }
     .status-group button { width: 100%; max-width: 300px; }
     #response { margin-top: 24px; font-family: 'Courier New', monospace; font-size: 13px; color: #2c3e50; background: #f8f9fa; border-radius: 8px; padding: 18px 20px; min-height: 50px; border: 1px solid #dee2e6; white-space: pre-wrap; word-break: break-word; }
@@ -39,6 +45,14 @@
     </div>
     
     <div class="content">
+      <div class="group">
+        <div class="group-title">Connection</div>
+        <div class="special-row">
+          <button id="connectBtn" onclick="connectToServer(this)">Connect</button>
+          <button id="disconnectBtn" onclick="disconnectFromServer(this)">Disconnect</button>
+        </div>
+      </div>
+
       <div class="group">
         <div class="group-title">X Axis Control</div>
         <div class="button-row">
@@ -94,11 +108,6 @@
         </div>
       </div>
 
-      <div class="group status-group">
-        <div class="group-title">Status Monitor</div>
-        <button onclick="getLastCommand()">Check Last Command</button>
-      </div>
-
       <div id="response"></div>
     </div>
   </div>
@@ -111,17 +120,44 @@
       const data = await res.json();
       let status = data.status;
       let cmd = data.server_response?.received_command;
-      document.getElementById("response").innerText =
-        "Status: " + status + "\nReceived Command: " + cmd;
+      let error = data.server_response?.error;
+      
+      if (error) {
+        document.getElementById("response").innerText = "Error: " + error;
+      } else {
+        document.getElementById("response").innerText =
+          "Status: " + status + "\nReceived Command: " + cmd;
+      }
     }
 
-    async function getLastCommand() {
-      const res = await fetch("/last");
+    async function connectToServer(button) {
+      if (button.classList.contains('cooling-down')) return;
+      
+      button.classList.add('cooling-down');
+      
+      const res = await fetch("/connect", { method: "POST" });
       const data = await res.json();
-      let serverData = data.server_response || {};
-      let lastCmd = serverData.last_command || "None";
-      document.getElementById("response").innerText =
-        "Last Command: " + lastCmd;
+      let message = data.server_response?.message || data.error;
+      document.getElementById("response").innerText = "Connect: " + message;
+      
+      setTimeout(() => {
+        button.classList.remove('cooling-down');
+      }, 1350);
+    }
+
+    async function disconnectFromServer(button) {
+      if (button.classList.contains('cooling-down')) return;
+      
+      button.classList.add('cooling-down');
+      
+      const res = await fetch("/disconnect", { method: "POST" });
+      const data = await res.json();
+      let message = data.server_response?.message || data.error;
+      document.getElementById("response").innerText = "Disconnect: " + message;
+      
+      setTimeout(() => {
+        button.classList.remove('cooling-down');
+      }, 1350);
     }
   </script>
 </body>

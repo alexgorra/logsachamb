@@ -1,80 +1,60 @@
 import logging
 from fastapi import FastAPI
-from pydantic import BaseModel
 from Server.server_mapper import command_mapper
 from Server.server_controller import controller
-from Configurations import settings
 
 
 # --- Logging setup ---
 log = logging.getLogger("Logger")
 handler = logging.StreamHandler()
-formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
 handler.setFormatter(formatter)
 log.addHandler(handler)
-log.setLevel(logging.DEBUG)
-handler.setLevel(logging.DEBUG)
+log.setLevel(logging.INFO)
 
-
-class Command(BaseModel):
-    command: str
 
 class Server:
     def __init__(self):
         self.log = log
         self.app = FastAPI()
-        self.last_command = None  # raw command key received
-        self.last_mapped_command = None  # translated g-code
-        self.last_controller_response = None  # response dict from controller
-        self.command_history_list = []
+        self.history = []
 
-        # Root route
+        # Root - show history
         @self.app.get("/")
-        def read_root():
-            return {
-                "message": "Welcome to server.py",
-                "Command History": list(reversed(self.command_history_list))
-            }
+        def root():
+            return {"history": list(reversed(self.history))}
 
-        # POST route to receive a command
+        # Simple GET endpoint - just send command in URL
+        @self.app.get("/cmd/{command}")
+        async def send_cmd(command: str):
+            self.log.info(f"Command: {command}")
+            
+            # Map command if exists in mapper, otherwise use raw
+            mapped = command_mapper.map_command(command) or command
+            
+            # Execute
+            controller.execute(mapped)
+            
+            # Save to history
+            self.history.append({"command": command, "mapped": mapped})
+            
+            return {"ok": True, "command": command, "mapped": mapped}
+
+        # POST route to accept JSON payloads for compatibility
         @self.app.post("/commands")
-        async def receive_command(cmd: Command):
-            # Receives Command
-            self.last_command = cmd.command
-            self.log.info(f"Received command key: {cmd.command}")
+        async def post_commands(payload: dict):
+            """Accept JSON body {"command": "..."} and process it."""
+            command = payload.get("command") if isinstance(payload, dict) else None
+            if not command:
+                return {"ok": False, "error": "missing 'command' field"}
 
-            # Verifies Command
-            mapped = command_mapper.map_command(cmd.command)
-            if mapped == "":  # mapper returns empty string when unknown
-                return {"status": "error", "error": f"Unknown command '{cmd.command}'"}
-            self.last_mapped_command = mapped
+            self.log.info(f"Command (POST): {command}")
+            mapped = command_mapper.map_command(command) or command
+            controller.execute(mapped)
+            self.history.append({"command": command, "mapped": mapped})
+            return {"ok": True, "command": command, "mapped": mapped}
 
-            #Executa (simulado)
-            controller_resp = controller.execute(mapped)
-            self.last_controller_response = controller_resp
-
-            self.command_history_list.append({cmd.command: mapped})
-
-            # 4. Return aggregated response to client
-            return {
-                "status": "ok",
-                "received_command": cmd.command,
-                #"mapped_command": mapped,
-                #"controller_response": controller_resp, #parse later
-            }
-
-        # GET route to read the last command received
-        @self.app.get("/commands/last")
-        async def get_last_command():
-            if not self.last_command:
-                return {"message": "No command received yet."}
-            return {
-                "last_command": self.last_command,
-                "last_mapped_command": self.last_mapped_command,
-                "last_controller_response": self.last_controller_response,
-            }
-
-        self.log.info("Server initialized")
+        self.log.info("Server ready")
 
 
 server = Server()

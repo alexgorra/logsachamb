@@ -1,14 +1,20 @@
-# WebClient/client.py
+#!/usr/bin/env python3
+# Client with both Web UI and CLI support
 import logging
+import sys
+import asyncio
 from pathlib import Path
 from fastapi import FastAPI, Request, Form
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 import httpx
 
+
 class Client:
-    def __init__(self, server_url="http://127.0.0.1:8000/commands"):
+    def __init__(self, server_url="http://10.128.3.114:8000"):
         self.log = logging.getLogger("ClientLogger")
+        # Clear existing handlers to prevent duplicates
+        self.log.handlers.clear()
         handler = logging.StreamHandler()
         formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
         handler.setFormatter(formatter)
@@ -16,56 +22,71 @@ class Client:
         self.log.setLevel(logging.INFO)
         
         self.app = FastAPI()
-        # Get the directory where this file is located
         client_dir = Path(__file__).parent
         templates_dir = client_dir / "templates"
         self.templates = Jinja2Templates(directory=str(templates_dir))
         self.server_url = server_url
-        self.data = None
 
-        # --- Define routes ---
+        # Web interface
         @self.app.get("/", response_class=HTMLResponse)
         async def main_page(request: Request):
-            """Render the web interface."""
             return self.templates.TemplateResponse("control.html", {"request": request})
 
+        # Send command endpoint
         @self.app.post("/send")
         async def send_command(command: str = Form(...)):
-            """Send a command to the backend server."""
-            return await self.send_command(command)
+            return await self.send_cmd(command)
 
-        @self.app.get("/last")
-        async def get_last_command():
-            """Fetch the last command from the backend server."""
-            return await self.read_last_command()
+        self.log.info("Client ready")
 
-        self.log.info("Web client initialized")
-
-    async def send_command(self, command: str):
-        """POST a command to the server."""
-        self.log.info(f"Sending command to server: {command}")
+    async def send_cmd(self, command: str):
+        """Send command to server (used by both web and CLI)"""
+        self.log.info(f"Sending: {command}")
         try:
-            async with httpx.AsyncClient() as client:
-                response = await client.post(self.server_url, json={"command": command})
-            self.log.info(f"Response from server: {response.text}")
-            return {"status": "ok", "server_response": response.json()}
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                response = await client.get(f"{self.server_url}/cmd/{command}")
+            self.log.info(f"Response: {response.text}")
+            return response.json()
+        except (httpx.ConnectError, httpx.TimeoutException):
+            self.log.error("Server offline")
+            return {"ok": False, "error": "Server offline"}
         except Exception as e:
-            self.log.error(f"Error sending command: {e}")
-            return {"status": "error", "error": str(e)}
+            self.log.error(f"Error: {e}")
+            return {"ok": False, "error": str(e)}
 
-    async def read_last_command(self):
-        """GET the last command from the server."""
-        try:
-            self.log.info("Requesting last command from server")
-            async with httpx.AsyncClient() as client:
-                response = await client.get(f"{self.server_url}/last")
-                data = response.json()
-                self.data = data
-                self.log.info(f"Received last command: {data}")
-                return {"server_response": data}
-        except Exception as e:
-            self.log.error(f"Error reading command: {e}")
-            return {"error": str(e)}
 
+# CLI mode
+async def cli_mode():
+    """Run in CLI mode to send a single command"""
+    if len(sys.argv) < 2:
+        print("Usage: python Client/client.py <command>")
+        print("\nExamples:")
+        print("  python Client/client.py x_plus_1")
+        print("  python Client/client.py 'G0 X10 Y20'")
+        print("  python Client/client.py G0 X10 Y20")
+        sys.exit(1)
+    
+    # Join all arguments to support commands with spaces
+    command = " ".join(sys.argv[1:])
+    client = Client()
+    
+    try:
+        result = await client.send_cmd(command)
+        print(f"Response: {result}")
+    except Exception as e:
+        print(f"Error: {e}")
+        sys.exit(1)
+
+
+# Initialize client for web mode
 client = Client()
 app = client.app
+
+
+# Entry point - detect CLI vs web mode
+if __name__ == "__main__":
+    # CLI mode - send command and exit
+    asyncio.run(cli_mode())
+else:
+    # Web mode - imported by uvicorn
+    pass
