@@ -7,12 +7,6 @@ from Configurations import commands, settings
 from Server.server_mapper import command_mapper
 
 log = logging.getLogger("Logger")
-handler = logging.StreamHandler()
-formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-handler.setFormatter(formatter)
-log.addHandler(handler)
-log.setLevel(logging.DEBUG)
-handler.setLevel(logging.DEBUG)
 
 class Controller:
 

@@ -41,6 +41,7 @@ COMMANDS_SPECIAL = {
     "home_x": "$HX",
     "home_y": "$HY",
     "home_a": "$HA",
+    "home_all": "$H",
     "goto_zero": "X0 Y0 A0",
     "CONNECT": "CONNECT",
     "DISCONNECT": "DISCONNECT",

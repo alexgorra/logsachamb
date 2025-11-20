@@ -11,7 +11,7 @@ import httpx
 
 
 class Client:
-    def __init__(self, server_url="http://10.128.3.114:8000"):
+    def __init__(self, server_url="http://10.227.161.48:8000"):
         self.log = logging.getLogger("ClientLogger")
         # Clear existing handlers to prevent duplicates
         self.log.handlers.clear()

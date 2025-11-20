@@ -2,12 +2,6 @@ import logging
 
 from Configurations import commands, settings
 log = logging.getLogger("Logger")
-handler = logging.StreamHandler()
-formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-handler.setFormatter(formatter)
-log.addHandler(handler)
-log.setLevel(logging.DEBUG)
-handler.setLevel(logging.DEBUG)
 
 class CommandMapper:
 
@@ -34,7 +28,6 @@ class CommandMapper:
             self.log.info(f"Mapped command '{command}' to '{mapped_command}'")
             return mapped_command
         else:
-            self.log.warning(f"The command '{command}' is not recognized. (check commands.py)")
             return ""
 
 
